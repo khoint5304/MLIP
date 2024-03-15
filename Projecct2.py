@@ -33,8 +33,6 @@ def solve_optimal_transport(N, K, distances, q):
     # Ensure each point is visited exactly once
     for point in range(1, 2 * N + 1):
         # Mỗi điểm chỉ đi ra và đi vào một lần
-        # Constraints
-        # Ensure each point is visited exactly once
         for point in range(1, 2 * N + 1):
             model.add_constraint(model.sum_vars(x[i, point, k] for i in range(
                 2 * N + 1) if i != point for k in range(K)) == 1)
