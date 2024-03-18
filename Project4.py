@@ -54,6 +54,17 @@ def solve_optimal_transport():
             print(int(x[i, j].solution_value), end=" ")
         
         print()
+    route = [0]
+    current_point = 0
+    while True:
+        for i in range(M + 1):
+            if x[current_point, i].solution_value == 1:
+                route.append(i)
+                current_point = i
+                break
+        if current_point == 0:
+            break
+    print("Route:", route)
 
 
 solve_optimal_transport()
