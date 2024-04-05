@@ -9,7 +9,8 @@ def solve_optimal_transport(N, K, distances, q):
     x = {(i, j, k): model.binary_var(name='x_{0}_{1}_{2}'.format(i, j, k))
          for i in range(2 * N + 1) for j in range(2 * N + 1) for k in range(K)}
     c = [[] for _ in range(K)]
-        
+    u = {(i, k): model.continuous_var(name='u_{0}_{1}'.format(i, k)) for i in range(1, 2 * N + 1) for k in range(K)}
+            
     # Objective function
     model.minimize(model.sum(distances[i][j] * x[i, j, k] for i in range(2 * N + 1)
                              for j in range(2 * N + 1) for k in range(K)))
@@ -26,8 +27,19 @@ def solve_optimal_transport(N, K, distances, q):
     for j in range(1, 2*N+1):
         model.add_constraint(model.sum(x[i, j, k] for i in range(2*N+1) for k in range(K)) == 1)
     
-    # Ensure no bus go from i to i
-    model.add_constraints(x[i,i,k] == 0 for i in range(2*N+1) for k in range(K))
+    # MTZ constraint
+    for k in range(K):
+        for i in range(1,2 * N + 1):
+            for j in range(1,2 * N + 1):
+                M = 1e4
+                model.add_constraint(u[j,k] - u[i,k] -1 <= M * (1 - x[i,j,k]))
+                model.add_constraint(u[j,k] - u[i,k] -1 >= -M * (1 - x[i,j,k]))
+
+    # ensure officer in and out thte same point
+    for j in range(1,2 * N + 1):
+        for k in range(K):
+            model.add_constraint(model.sum(x[i,j,k]  - x[j,t,k] for i in range(2 * N + 1) for t in range(2 * N + 1)) == 0)
+
     
     # Add customers when go through point from 1 to N, remove customers when go through point from N+1 to 2N
     for k in range(K):
@@ -87,14 +99,23 @@ def print_transport_result(N, K, transport_plan):
         print()
     
 # Example usage
-N = 2  # Number of passengers
-K = 1  # Number of buses
-distances = [[0, 1, 2, 3, 4],
-             [1, 0, 1, 2, 3],
-             [2, 1, 0, 1, 2],
-             [3, 2, 1, 0, 1],
-             [4, 3, 2, 1, 0]]  # Example distances matrix
-q = [2]  # Capacity of each bus
+N = 6  # Number of passengers
+K = 2  # Number of buses
+distances = [   [0, 3, 5, 7, 10, 12, 15, 17, 20, 22, 25, 27, 30],   # Điểm 0 (điểm xuất phát)
+                [3, 0, 2, 5, 8, 10, 13, 15, 18, 20, 23, 25, 28],    # Điểm 1
+                [5, 2, 0, 3, 6, 8, 11, 13, 16, 18, 21, 23, 26],     # Điểm 2
+                [7, 5, 3, 0, 3, 5, 8, 10, 13, 15, 18, 20, 23],      # Điểm 3
+                [10, 8, 6, 3, 0, 2, 5, 7, 10, 12, 15, 17, 20],      # Điểm 4
+                [12, 10, 8, 5, 2, 0, 3, 5, 8, 10, 13, 15, 18],      # Điểm 5
+                [15, 13, 11, 8, 5, 3, 0, 2, 5, 7, 10, 12, 15],      # Điểm 6
+                [17, 15, 13, 10, 7, 5, 2, 0, 3, 5, 8, 10, 13],      # Điểm 7
+                [20, 18, 16, 13, 10, 8, 5, 3, 0, 2, 5, 7, 10],      # Điểm 8
+                [22, 20, 18, 15, 12, 10, 7, 5, 2, 0, 3, 5, 8],      # Điểm 9
+                [25, 23, 21, 18, 15, 13, 10, 8, 5, 3, 0, 2, 5],     # Điểm 10
+                [27, 25, 23, 20, 17, 15, 12, 10, 7, 5, 2, 0, 3],    # Điểm 11
+                [30, 28, 26, 23, 20, 18, 15, 13, 10, 8, 5, 3, 0]    # Điểm 12
+]  # Example distances matrix
+q = [30,30]  # Capacity of each bus
 
 total_distance, transport_plan = solve_optimal_transport(N, K, distances, q)
 print('Total distance:', total_distance)
